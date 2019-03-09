@@ -1,0 +1,47 @@
+// ENVIRONMENT, SERVER, SERVER_INSTANCE, RETENTION_RATE variables are required and are tags on EC2 instance
+
+pipeline {
+  any node {
+    environment {
+
+    }
+    stages {
+      stage ("Backup") {
+        script {
+
+        def BACKUP_INSTANCE_ID_COMMAND = 'aws ec2 describe-instances | jq ' + "\'.Reservations[].Instances[] | select(contains({Tags: [{Key: \"Name\"}, {Value: \"${env.ENVIRONMENT}-${env.SERVER}-${env.SERVER_INSTANCE}\"}]}))\'" + ' | grep InstanceId | cut -d \':\' -f 2 | sed \'s/[\",]//g\''
+        def BACKUP_INSTANCE_ID = sh (returnStdout: true, script: "${BACKUP_INSTANCE_ID_COMMAND}").trim()
+
+        echo "Backing up server: " + env.ENVIRONMENT + "-" + env.SERVER + "-" + env.SERVER_INSTANCE
+        sh "sudo aws ec2 create-image --instance-id ${BACKUP_INSTANCE_ID} --name \"${ENVIRONMENT}-${SERVER}-backup\" --description \"backup\""
+        }
+      }
+    }
+
+    stage ("Remove old backups") {
+      script {
+
+        def TOTAL_BACKUP_COUNT = sh (returnStdout: true, script: "aws ec2 describe-images --owners self | grep -B 15 ${env.ENVIRONMENT}-${env.SERVER}-backup | grep ImageId | cut -d \'\"\' -f 4 | wc -l").trim()
+
+        // don't remove old backups until RETENTION_RATE is reached
+        if (env.RETENTION_RATE > TOTAL_BACKUP_COUNT) {
+          echo "skipping removing old backups"
+        } else {
+        def TOTAL_TO_REMOVE = TOTAL_BACKUP_COUNT - RETENTION_RATE
+
+          1.upto (TOTAL_TO_REMOVE.toInteger()) {
+            def LOOP_COUNT = "${it}".toInteger()
+            def OLD_AMI = sh (returnStdout: true, script: "aws ec2 describe-images --owners self | grep -B 15 ${env.ENVIRONMENT}-${env.SERVER}-backup | grep ImageId | cut -d \'\"\' -f 4 | tail -n ${LOOP_COUNT}").trim()
+
+            try {
+              sh "sudo aws ec2 deregister-image --image-id ${env.OLD_AMI}"
+            }
+            catch (Exception ex) {
+              echo "unable to remove or deregister image"
+            }
+          }
+        }
+      }
+    }
+  }
+}

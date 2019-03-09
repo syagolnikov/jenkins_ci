@@ -1,0 +1,23 @@
+pipeline {
+    agent any
+        stages {
+            stage('run-parallel-branches') {
+                steps {
+                    parallel(
+                        Test: {
+                            echo "testing 1"
+                        },
+                        Confirm: {
+                            echo "testing 2"
+                        }
+                    )
+                }
+            }
+
+            stage('santize') {
+                steps {
+                    sh "rm -rf ./*"
+                }
+            }
+        }
+}

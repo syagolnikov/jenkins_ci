@@ -1,0 +1,21 @@
+// AWS_REGION, S3_DESTINATION, JENKINS_HOME is required
+
+pipeline {
+  any node {
+    environment {
+      env.DATE = sh (returnStdout: true, script: 'date +\"%m-%d-20%y\"').trim()
+    }
+    stages {
+      stage ("Backup home") {
+        script {
+          try {
+            sh "aws --region ${env.AWS_REGION} s3 sync ${env.JENKINS_HOME}/\* s3://${env.S3_DESTINATION/${env.DATE}/}"
+          }
+          catch (Exception ex) {
+            echo "unable to backup S3 backup today"
+          }
+        }
+      }
+    }
+  }
+}

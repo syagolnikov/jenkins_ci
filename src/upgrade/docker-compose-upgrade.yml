@@ -1,0 +1,29 @@
+version: '3'
+services:
+  jenkins-master-DATE:
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./jenkins/:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    container_name: jenkins-master-DATE
+    restart: always
+    image: jenkinsci/blueocean
+    networks:
+      - backend
+  nginx:
+    container_name: nginx
+    image: nginx:1.15-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./src/infrastructure/nginx/crt:/etc/nginx/crt
+      - ./src/infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
