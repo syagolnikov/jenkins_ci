@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DATE=$(date +%m-%d-20%y)
-SYSTEM_USER=$(ls -al ../../jenkins | tail -n 1 | awk '{print $3}')
+SYSTEM_USER=$(ls -al ../../../jenkins | tail -n 1 | awk '{print $3}')
 TOKEN=$2
 USER=$1
 
@@ -13,12 +13,12 @@ function start_standby () {
 	fi
 
 	##copy all files to standby directory and launch standby
-	mkdir -p ../../jenkins_standby
-	mkdir -p ../../jenkins_backup_$DATE
-	rm -rf ../../jenkins_standby/*
-	cp -R ../../jenkins/* ../../jenkins_standby/
-	sudo chown $SYSTEM_USER -R ../../jenkins_standby/
-	cp -R ../../jenkins/* ../../jenkins_backup_$DATE
+	mkdir -p ../../../jenkins_standby
+	mkdir -p ../../../jenkins_backup_$DATE
+	rm -rf ../../../jenkins_standby/*
+	cp -R ../../../jenkins/* ../../../jenkins_standby/
+	sudo chown $SYSTEM_USER -R ../../../jenkins_standby/
+	cp -R ../../../jenkins/* ../../../jenkins_backup_$DATE
 	sudo docker rm -f jenkins-master-standby
 	sudo docker-compose -f docker-compose-standby.yml up -d
 	sleep 120
@@ -39,7 +39,7 @@ function update_standby () {
     		echo Updating Jenkins Plugins: ${UPDATE_LIST};
     		java -jar jenkins-cli.jar -s http://127.0.0.1:8081/ -auth $USER:$TOKEN install-plugin ${UPDATE_LIST};
     		java -jar jenkins-cli.jar -s http://127.0.0.1:8081/ -auth $USER:$TOKEN safe-restart;
-				sleep 90
+		sleep 90
 	fi
 }
 
@@ -50,10 +50,10 @@ function update_master () {
 	if [[ "$TEST" -eq "SUCCESS" ]]; then
 		sudo docker stop jenkins-master
 		sudo docker stop jenkins-master-standby
-		sudo rm -r ../../jenkins/*
-		cp -R ../../jenkins_standby/* ../../jenkins/
-		sudo rm -rf ../../jenkins_standby
-		sudo chown $SYSTEM_USER -R ../../jenkins/
+		sudo rm -r ../../../jenkins/*
+		cp -R ../../../jenkins_standby/* ../../../jenkins/
+		sudo rm -rf ../../../jenkins_standby
+		sudo chown $SYSTEM_USER -R ../../../jenkins/
 		sudo docker start jenkins-master
 	fi
 }
